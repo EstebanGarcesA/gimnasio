@@ -6,6 +6,8 @@ import com.cesde.gimnasio.model.entity.Suscripcion;
 import com.cesde.gimnasio.repository.PlanRepository;
 import com.cesde.gimnasio.repository.SocioRepository;
 import com.cesde.gimnasio.repository.SuscripcionRepository;
+import com.cesde.gimnasio.service.SuscripcionService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ public class SuscripcionController {
     private final SuscripcionRepository suscripcionRepository;
     private final SocioRepository socioRepository;
     private final PlanRepository planRepository;
+    private final SuscripcionService suscripcionService;
 
     @GetMapping
     public List<Suscripcion> listar() {
@@ -57,7 +60,7 @@ public class SuscripcionController {
         suscripcion.setId(null);
         suscripcion.setSocio(socio);
         suscripcion.setPlan(plan);
-        return ResponseEntity.status(HttpStatus.CREATED).body(suscripcionRepository.save(suscripcion));
+        return ResponseEntity.status(HttpStatus.CREATED).body(suscripcionService.crearSuscripcion(suscripcion));
     }
 
     @PutMapping("/{id}")
