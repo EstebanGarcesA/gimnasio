@@ -1,5 +1,12 @@
 package com.cesde.gimnasio.service;
 
+import com.cesde.gimnasio.model.entity.Suscripcion;
+import com.cesde.gimnasio.model.enums.TipoPlan;
+import com.cesde.gimnasio.repository.SuscripcionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
 import com.cesde.gimnasio.model.entity.Plan;
 import com.cesde.gimnasio.model.entity.Socio;
 import com.cesde.gimnasio.model.entity.Suscripcion;
@@ -18,6 +25,30 @@ import java.util.NoSuchElementException;
 public class SuscripcionService {
 
     private final SuscripcionRepository suscripcionRepository;
+
+    public Suscripcion crearSuscripcion(Suscripcion suscripcion) {
+
+        //VALIDACIONES
+        if (suscripcion.getFechaInicio() == null) {
+            throw new IllegalArgumentException("La fechaInicio es obligatoria");
+        }
+
+        if (suscripcion.getPlan() == null || suscripcion.getPlan().getNombre() == null) {
+            throw new IllegalArgumentException("El plan es obligatorio");
+        }
+
+        LocalDate fechaInicio = suscripcion.getFechaInicio();
+
+        // Logica para calcular la fechaFin según el tipo de plan
+        if (suscripcion.getPlan().getNombre() == TipoPlan.MENSUAL) {
+            suscripcion.setFechaFin(fechaInicio.plusDays(30));
+        } else if (suscripcion.getPlan().getNombre() == TipoPlan.ANUAL) {
+            suscripcion.setFechaFin(fechaInicio.plusDays(365));
+        }
+
+        return suscripcionRepository.save(suscripcion);
+    }
+}
     private final SocioRepository socioRepository;
     private final PlanRepository planRepository;
 
@@ -27,7 +58,8 @@ public class SuscripcionService {
 
         // REGLA #4 (VALIDACIÓN)
         if (socio.getEstadoSalud() == null || socio.getEstadoSalud().trim().isEmpty()) {
-            throw new IllegalArgumentException("No se puede crear la suscripción: el socio no tiene estado de salud registrado");
+            throw new IllegalArgumentException(
+                    "No se puede crear la suscripción: el socio no tiene estado de salud registrado");
         }
 
         Plan plan = resolverPlan(suscripcion.getPlan());
@@ -43,6 +75,24 @@ public class SuscripcionService {
         suscripcion.setId(null);
         suscripcion.setSocio(socio);
         suscripcion.setPlan(plan);
+
+        // REGLA #1 (fechaFin)
+
+        if (suscripcion.getFechaInicio() == null) {
+            suscripcion.setFechaInicio(java.time.LocalDate.now());
+        }
+
+        int dias = plan.getNombre() == com.cesde.gimnasio.model.enums.TipoPlan.MENSUAL ? 30 : 365;
+
+        suscripcion.setFechaFin(suscripcion.getFechaInicio().plusDays(dias));
+
+        // REGLA #5 (codigoAcceso)
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd");
+
+        String codigoAcceso = "ACC-" + socio.getId() + "-" +
+                suscripcion.getFechaInicio().format(formatter);
+
+        suscripcion.setCodigoAcceso(codigoAcceso);
 
         return suscripcionRepository.save(suscripcion);
     }
